@@ -1,8 +1,11 @@
 import io
 import requests
 from PyPDF2 import PdfMerger
+import datetime
 
-def merge_pdfs(urls, output_path):
+def merge_pdfs(urls: list[str], output_path:str) -> None:
+    _ = open(output_path,  "x")
+    _.close()
     merger = PdfMerger()
 
     for url in urls:
@@ -22,4 +25,4 @@ def getLink(yearSat: int, paperNumber: int, questionNumber: int) -> str:
 url1 = getLink(2023, 8, 3)
 url2 = getLink(2023, 1, 1)
 
-merge_pdfs([url1, url2], "combined.pdf")
+merge_pdfs([url1, url2], f"{datetime.datetime.today().strftime("%Y-%m-%d_%H-%M-%S") }.pdf")
