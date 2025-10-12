@@ -1,8 +1,11 @@
-import google.generativeai as genai
+import google.generativeai as genaI
 import os
 import sqlite3
-
-id = "y2022p2q10"
+import requests
+from google import genai
+from google.genai.errors import APIError
+from google.genai import types
+import pathlib
 
 def extractData(id: str) -> tuple[int, int, int]:
     '''
@@ -21,35 +24,58 @@ def difficulty(median: int) -> str:
         return "Easy"
     elif median >= 13:
         return "Medium"
-    else:
+    elif median >= 0:
         return "Hard"
+    else:
+        return "None"
     
-def getTopics(question_id: str) -> str:
-    """
-    Uses Google Generative AI to suggest 3 subtopic tags for a given question ID.
-    """
+def downloadPdf(question_id):
+    pdf_url = f"https://www.cl.cam.ac.uk/teaching/exams/pastpapers/{question_id}.pdf"
+    print(f"Attempting to download: {pdf_url}")
 
+    output_url = f"gemini.pdf"
+
+    reponse = requests.get(pdf_url)
+    with open(output_url, "wb") as f:
+        f.write(reponse.content)
+
+def uploadPdf(question_id: str) -> str:
+    downloadPdf(question_id)
+
+    path = pathlib.Path("gemini.pdf")
+    if not path.exists():
+        return f"Error: File not found at gemini.pdf"
     
-    # Define your model — you can use 'gemini-1.5-pro' or similar
-    model = genai.GenerativeModel('gemini-2.5-flash', system_instruction=f"""
-    You are an expert Cambridge Computer Science examiner.
-    Your task is to classify past paper questions into precise subtopics.
-    Analyze the content of the PDF in the following links and return the most relevant topic.
-    You must ONLY return a string with the subtopic and nothing else.
-    Always choose the most specific topic that fits the question
-    Example valid outputs: "Automaton Theory", "Turing Machines", "Complexity Theory".
-    """)
+    with genai.Client(api_key=api_key) as client:    
+        uploaded_file = client.files.upload(
+            file=path,
+            config={'display_name': path.name}
+        )        
 
-    prompt = f"https://www.cl.cam.ac.uk/teaching/exams/pastpapers/{question_id}.pdf"
+        systemInstructionText = """
+                You are an expert Cambridge Computer Science examiner.
+                Your task is to classify the provided past paper question (a PDF) into a precise subtopic.
+                Analyze the content of the PDF file and return the single most relevant and specific subtopic.
+                You must ONLY return a string with the subtopic and nothing else.
+                Always choose the most specific topic that fits the question.
+                Example valid outputs: "Automaton Theory", "Turing Machines", "Complexity Theory".
+            """
+        config = types.GenerateContentConfig(
+            system_instruction=systemInstructionText,
+            temperature=0.2
+        )
+            
+        prompt = "Analyze this past paper question and return the most specific subtopic."
 
-    response = model.generate_content(prompt)
-
-    print(response.text)
-    # Clean up the output
-    text = response.text.strip()
-
-    return text
-
+        response = client.models.generate_content(
+            model = "gemini-2.5-flash",
+            contents=[uploaded_file, prompt],
+            config=config   
+        )
+            
+        client.files.delete(name=uploaded_file.name)
+        return response.text
+    
 def createTable():
     """Creates the questions table if it doesn't already exist."""
     conn = sqlite3.connect("questions.db")
@@ -75,7 +101,7 @@ def packageData(id: str, median: int, module: str):
     extract = extractData(id)
     year, paper, questionNumber = extract[0], extract[1], extract[2]
     skill = difficulty(median)
-    topic = getTopics(id)
+    topic = uploadPdf(id)
 
     conn = sqlite3.connect("questions.db")
     cursor = conn.cursor()
@@ -89,11 +115,11 @@ def packageData(id: str, median: int, module: str):
     conn.commit()
     conn.close()
 
-genai.configure(api_key=os.environ["GOOGLE_API_TOKEN_QUESTION"])
+api_key=os.environ["GOOGLE_API_TOKEN_QUESTION"]
 
 id = ""
 median = -2
-while median != -1:
+while median != -3:
     median = int(input("Insert Median:      "))
     id = input("Insert ID:      ")
-    packageData(id, median, "Algorithms 1")
+    packageData(id, median, "Digital Electronics")

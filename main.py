@@ -21,8 +21,3 @@ def merge_pdfs(urls: list[str], output_path:str) -> None:
 
 def getLink(yearSat: int, paperNumber: int, questionNumber: int) -> str:
     return f"https://www.cl.cam.ac.uk/teaching/exams/pastpapers/y{yearSat}p{paperNumber}q{questionNumber}.pdf"
-
-url1 = getLink(2023, 8, 3)
-url2 = getLink(2023, 1, 1)
-
-merge_pdfs([url1, url2], f"{datetime.datetime.today().strftime("%Y-%m-%d_%H-%M-%S") }.pdf")
