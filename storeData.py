@@ -1,9 +1,7 @@
-import google.generativeai as genaI
 import os
 import sqlite3
 import requests
 from google import genai
-from google.genai.errors import APIError
 from google.genai import types
 import pathlib
 
