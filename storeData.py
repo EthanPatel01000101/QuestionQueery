@@ -120,4 +120,4 @@ median = -2
 while median != -3:
     median = int(input("Insert Median:      "))
     id = input("Insert ID:      ")
-    packageData(id, median, "Digital Electronics")
+    packageData(id, median, "Algorithms 2")
