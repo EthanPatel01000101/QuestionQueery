@@ -50,18 +50,41 @@ class SearchBar:
 
         # Create a detailed system instruction for the model
         system_instruction = f"""
-        You are a smart query parser for a university past paper database.
-        Your task is to analyze a user's free-text query and return a Python list of the most relevant, exact category names from the provided list.
-        The list of possible categories is: {filter_instance.shuffleAll()}
-        
-        - **Constraint 1:** You must only return items that are an exact match for one of the categories in the provided list.
-        - **Constraint 2:** If a range is given (e.g., '2022 to 2024'), you must enumerate all the items in that range if they exist in the categories list.
-        - **Constraint 3:** Your final output must be a Python list literal and *only* the list.
-        
-        Example 1: Query: "Give me all data between 2022 to 2024" Return: ["2022", "2023", "2024"]
-        Example 2: Query: "give me a question relating to finite automata" Return: ["Finite Automata", "Automaton Theory", "Automata Theory"]
-        Example 3: Query: "Paper 1, Question 5, and anything on Networking" Return: ["Paper 1", "Question 5", "Networking"]
-        """
+            You are a precise but context-aware query parser for a university past paper database.
+
+            Given a user's free-text query, return a Python list of the most relevant category names
+            from the provided list: {filter_instance.shuffleAll()}.
+
+            Your goal is to interpret the intent carefully:
+            include only categories that are either an **exact match** or a **directly dependent subtopic or synonym**
+            strongly tied to the query term in an academic or exam context.
+
+            ### Rules
+            1. **Exact Match First:** Always include exact matches to the query text.
+            2. **Tight Semantic Proximity:** You may include a few directly related subtopics or synonyms,
+            but only if they would normally appear *within the same lecture, question, or syllabus subsection*.
+            - Example: “Number Theory” → may include “Modular Arithmetic” or “Chinese Remainder Theorem”.
+            - Counterexample: “SQL” → exclude “Databases” unless the query explicitly mentions “database”.
+            3. **No Broad Generalization:** Do not include parent topics or distantly related areas.
+            4. **Range Handling:** For ranges (e.g. “2022 to 2024”), enumerate all items within that range if present in the list.
+            5. **Output Format:** Your final output must be a valid Python list literal, with no extra text.
+
+            ### Examples
+            Query: "Give me all data between 2022 to 2024"
+            Return: ["2022", "2023", "2024"]
+
+            Query: "Questions on number theory"
+            Return: ["Number Theory", "Modular Arithmetic", "Chinese Remainder Theorem"]
+
+            Query: "Show SQL questions"
+            Return: ["SQL"]
+
+            Query: "Paper 1 Question 5 and automata"
+            Return: ["Paper 1", "Question 5", "Finite Automata", "Automata Theory"]
+
+            Query: "Anything on databases"
+            Return: ["Databases", "SQL"]
+            """
 
         self.model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=system_instruction)
         
@@ -135,7 +158,7 @@ class PastPaperApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Past Paper Search & Export")
-        self.geometry("800x600")
+        self.geometry("900x600")
 
         # --- Application State ---
         self.filter = Filter()
