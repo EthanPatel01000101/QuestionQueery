@@ -100,6 +100,8 @@ def packageData(id: str, median: int, module: str):
     year, paper, questionNumber = extract[0], extract[1], extract[2]
     skill = difficulty(median)
     topic = uploadPdf(id)
+    paper = "Paper " + str(paper)
+    questionNumber = "Question " + str(questionNumber)
 
     conn = sqlite3.connect("questions.db")
     cursor = conn.cursor()
@@ -116,8 +118,9 @@ def packageData(id: str, median: int, module: str):
 api_key=os.environ["GOOGLE_API_TOKEN_QUESTION"]
 
 id = ""
+type = input("Insert Module:    ")
 median = -2
 while median != -3:
     median = int(input("Insert Median:      "))
     id = input("Insert ID:      ")
-    packageData(id, median, "Algorithms 2")
+    packageData(id, median, type)
